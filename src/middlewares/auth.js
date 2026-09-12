@@ -17,6 +17,7 @@ export async function requireAuth(req, res, next) {
   const [scheme, token] = header.split(" ");
 
   if (scheme !== "Bearer" || !token) {
+    res.set("WWW-Authenticate", 'Bearer realm="pedidos360"');
     return res.status(401).json({ message: "Falta el token de acceso (Authorization: Bearer <token>)" });
   }
 
@@ -36,6 +37,10 @@ export async function requireAuth(req, res, next) {
     next();
   } catch (error) {
     console.error("[auth] Token inválido:", error.message);
+    res.set(
+      "WWW-Authenticate",
+      'Bearer realm="pedidos360", error="invalid_token", error_description="El token es inválido o expiró"',
+    );
     res.status(401).json({ message: "Token inválido o expirado" });
   }
 }
@@ -48,6 +53,10 @@ export function requireRole(...roles) {
     const allowed = roles.length === 0 || roles.some((role) => userRoles.includes(role));
 
     if (!allowed) {
+      res.set(
+        "WWW-Authenticate",
+        `Bearer realm="pedidos360", error="insufficient_scope", error_description="Rol requerido: ${roles.join(" o ")}"`,
+      );
       return res.status(403).json({
         message: `No tienes permiso para esta acción. Rol requerido: ${roles.join(" o ")}.`,
       });
