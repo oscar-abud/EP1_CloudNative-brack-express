@@ -19,4 +19,9 @@ export const env = {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
+
+  // Supabase: solo la secret key (bypassa RLS). Nunca la publishable key acá,
+  // esa es para el front si algún día hablara directo con Supabase.
+  supabaseUrl: required(process.env.SUPABASE_URL, "SUPABASE_URL"),
+  supabaseSecretKey: required(process.env.SUPABASE_SECRET_KEY, "SUPABASE_SECRET_KEY"),
 };

@@ -1,18 +1,18 @@
 import * as ProductoModel from "../models/productoModel.js";
 
-export function listar(req, res) {
-  res.json(ProductoModel.getAll());
+export async function listar(req, res) {
+  res.json(await ProductoModel.getAll());
 }
 
-export function obtener(req, res) {
-  const producto = ProductoModel.getById(req.params.id);
+export async function obtener(req, res) {
+  const producto = await ProductoModel.getById(req.params.id);
   if (!producto) {
     return res.status(404).json({ message: "Producto no encontrado" });
   }
   res.json(producto);
 }
 
-export function crear(req, res) {
+export async function crear(req, res) {
   const { nombre, descripcion, precio, stock, categoria, activo } = req.body;
 
   if (!nombre || precio == null || stock == null) {
@@ -21,7 +21,7 @@ export function crear(req, res) {
     });
   }
 
-  const producto = ProductoModel.create({
+  const producto = await ProductoModel.create({
     nombre,
     descripcion: descripcion ?? "",
     precio: Number(precio),
@@ -33,16 +33,16 @@ export function crear(req, res) {
   res.status(201).json(producto);
 }
 
-export function actualizar(req, res) {
-  const producto = ProductoModel.update(req.params.id, req.body);
+export async function actualizar(req, res) {
+  const producto = await ProductoModel.update(req.params.id, req.body);
   if (!producto) {
     return res.status(404).json({ message: "Producto no encontrado" });
   }
   res.json(producto);
 }
 
-export function eliminar(req, res) {
-  const eliminado = ProductoModel.remove(req.params.id);
+export async function eliminar(req, res) {
+  const eliminado = await ProductoModel.remove(req.params.id);
   if (!eliminado) {
     return res.status(404).json({ message: "Producto no encontrado" });
   }

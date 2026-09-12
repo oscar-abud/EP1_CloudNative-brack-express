@@ -1,43 +1,77 @@
-import { randomUUID } from "node:crypto";
+import { supabase } from "../config/supabaseClient.js";
 
-// Igual que productoModel: arreglo en memoria, futuro reemplazo por Supabase.
-let pedidos = [
-  {
-    id: "pe1",
-    clienteNombre: "Cliente de prueba",
-    items: [
-      { productoId: "p1", nombre: "Notebook Lenovo IdeaPad", cantidad: 1, precioUnitario: 450000 },
-      { productoId: "p2", nombre: "Mouse inalámbrico", cantidad: 2, precioUnitario: 8990 },
-    ],
-    total: 450000 + 2 * 8990,
-    estado: "pendiente",
-    createdAt: new Date().toISOString(),
-  },
-];
+const SELECT_CON_ITEMS = "*, pedido_items(*)";
 
-export function getAll() {
-  return pedidos;
-}
-
-export function getById(id) {
-  return pedidos.find((pedido) => pedido.id === id) ?? null;
-}
-
-export function create(data) {
-  const pedido = {
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
-    ...data,
+function toItem(row) {
+  return {
+    productoId: row.producto_id,
+    nombre: row.nombre,
+    cantidad: row.cantidad,
+    precioUnitario: Number(row.precio_unitario),
   };
-  pedidos.push(pedido);
-  return pedido;
 }
 
-export function update(id, data) {
-  const index = pedidos.findIndex((pedido) => pedido.id === id);
-  if (index === -1) {
-    return null;
-  }
-  pedidos[index] = { ...pedidos[index], ...data, id };
-  return pedidos[index];
+function toPedido(row) {
+  return {
+    id: row.id,
+    clienteNombre: row.cliente_nombre,
+    items: (row.pedido_items ?? []).map(toItem),
+    total: Number(row.total),
+    estado: row.estado,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getAll() {
+  const { data, error } = await supabase
+    .from("pedidos")
+    .select(SELECT_CON_ITEMS)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data.map(toPedido);
+}
+
+export async function getById(id) {
+  const { data, error } = await supabase
+    .from("pedidos")
+    .select(SELECT_CON_ITEMS)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toPedido(data) : null;
+}
+
+export async function create({ clienteNombre, items, total, estado }) {
+  const { data: pedido, error } = await supabase
+    .from("pedidos")
+    .insert({ cliente_nombre: clienteNombre, total, estado })
+    .select()
+    .single();
+  if (error) throw error;
+
+  const filas = items.map((item) => ({
+    pedido_id: pedido.id,
+    producto_id: item.productoId,
+    nombre: item.nombre,
+    cantidad: item.cantidad,
+    precio_unitario: item.precioUnitario,
+  }));
+
+  const { error: itemsError } = await supabase.from("pedido_items").insert(filas);
+  if (itemsError) throw itemsError;
+
+  return getById(pedido.id);
+}
+
+// Solo se usa para cambiar el estado (ver pedidoRoutes/pedidoController).
+export async function update(id, { estado }) {
+  const { data, error } = await supabase
+    .from("pedidos")
+    .update({ estado })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return getById(id);
 }

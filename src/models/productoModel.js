@@ -1,69 +1,77 @@
-import { randomUUID } from "node:crypto";
+import { supabase } from "../config/supabaseClient.js";
 
-// "Base de datos" en memoria: un arreglo. Se reemplaza por Supabase/PostgreSQL
-// más adelante, sin tener que tocar controllers ni routes (misma forma de datos).
-let productos = [
-  {
-    id: "p1",
-    nombre: "Notebook Lenovo IdeaPad",
-    descripcion: "14'' Ryzen 5, 8GB RAM, 512GB SSD",
-    precio: 450000,
-    stock: 12,
-    categoria: "Tecnología",
-    activo: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "p2",
-    nombre: "Mouse inalámbrico",
-    descripcion: "Mouse óptico con receptor USB",
-    precio: 8990,
-    stock: 40,
-    categoria: "Accesorios",
-    activo: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "p3",
-    nombre: "Silla ergonómica",
-    descripcion: "Silla de oficina con soporte lumbar",
-    precio: 129990,
-    stock: 5,
-    categoria: "Mobiliario",
-    activo: true,
-    createdAt: new Date().toISOString(),
-  },
-];
-
-export function getAll() {
-  return productos;
-}
-
-export function getById(id) {
-  return productos.find((producto) => producto.id === id) ?? null;
-}
-
-export function create(data) {
-  const producto = {
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
-    ...data,
+// Traduce la fila de Postgres (snake_case) a lo que espera el front (camelCase).
+function toProducto(row) {
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    descripcion: row.descripcion,
+    precio: Number(row.precio),
+    stock: row.stock,
+    categoria: row.categoria,
+    activo: row.activo,
+    createdAt: row.created_at,
   };
-  productos.push(producto);
-  return producto;
 }
 
-export function update(id, data) {
-  const index = productos.findIndex((producto) => producto.id === id);
-  if (index === -1) {
-    return null;
-  }
-  productos[index] = { ...productos[index], ...data, id };
-  return productos[index];
+// Solo incluye los campos que vienen definidos (sirve para updates parciales).
+function toRow(input) {
+  const row = {};
+  if (input.nombre !== undefined) row.nombre = input.nombre;
+  if (input.descripcion !== undefined) row.descripcion = input.descripcion;
+  if (input.precio !== undefined) row.precio = input.precio;
+  if (input.stock !== undefined) row.stock = input.stock;
+  if (input.categoria !== undefined) row.categoria = input.categoria;
+  if (input.activo !== undefined) row.activo = input.activo;
+  return row;
 }
 
-export function remove(id) {
-  const antes = productos.length;
-  productos = productos.filter((producto) => producto.id !== id);
-  return productos.length < antes;
+export async function getAll() {
+  const { data, error } = await supabase
+    .from("productos")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data.map(toProducto);
+}
+
+export async function getById(id) {
+  const { data, error } = await supabase
+    .from("productos")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toProducto(data) : null;
+}
+
+export async function create(input) {
+  const { data, error } = await supabase
+    .from("productos")
+    .insert(toRow(input))
+    .select()
+    .single();
+  if (error) throw error;
+  return toProducto(data);
+}
+
+export async function update(id, input) {
+  const { data, error } = await supabase
+    .from("productos")
+    .update(toRow(input))
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toProducto(data) : null;
+}
+
+export async function remove(id) {
+  const { data, error } = await supabase
+    .from("productos")
+    .delete()
+    .eq("id", id)
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length > 0;
 }
