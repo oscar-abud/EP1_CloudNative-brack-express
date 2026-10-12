@@ -15,6 +15,10 @@ export const env = {
   azureTenantId: required(process.env.AZURE_TENANT_ID, "AZURE_TENANT_ID"),
   azureAudience: required(process.env.AZURE_AUDIENCE, "AZURE_AUDIENCE"),
 
+  // Secret de la misma app (client ID = azureAudience) para pedir tokens de
+  // Microsoft Graph con client credentials (gestión de usuarios y roles).
+  azureClientSecret: required(process.env.AZURE_CLIENT_SECRET, "AZURE_CLIENT_SECRET"),
+
   corsOrigins: (process.env.CORS_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())
