@@ -1,5 +1,6 @@
 import * as PedidoModel from "../models/pedidoModel.js";
 import * as ProductoModel from "../models/productoModel.js";
+import * as EventPublisher from "../messaging/eventPublisher.js";
 
 export async function listar(req, res) {
   res.json(await PedidoModel.getAll());
@@ -50,6 +51,10 @@ export async function crear(req, res) {
     estado: estado ?? "pendiente",
   });
 
+  // Evento asíncrono (notificación + ticket). No se espera: si RabbitMQ
+  // falla, el pedido igual queda creado y el error se registra en el log.
+  void EventPublisher.pedidoCreado(pedido);
+
   res.status(201).json(pedido);
 }
 
@@ -59,6 +64,9 @@ export async function actualizar(req, res) {
   const pedido = await PedidoModel.update(req.params.id, estado ? { estado } : req.body);
   if (!pedido) {
     return res.status(404).json({ message: "Pedido no encontrado" });
+  }
+  if (estado) {
+    void EventPublisher.pedidoEstadoActualizado(pedido);
   }
   res.json(pedido);
 }

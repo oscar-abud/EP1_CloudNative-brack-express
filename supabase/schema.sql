@@ -42,3 +42,35 @@ values
   ('Notebook Lenovo IdeaPad', '14'' Ryzen 5, 8GB RAM, 512GB SSD', 450000, 12, 'Tecnología', true),
   ('Mouse inalámbrico', 'Mouse óptico con receptor USB', 8990, 40, 'Accesorios', true),
   ('Silla ergonómica', 'Silla de oficina con soporte lumbar', 129990, 5, 'Mobiliario', true);
+
+-- ===================== EP3: mensajería (RabbitMQ) =====================
+-- Correr este bloque en el SQL Editor de Supabase (es idempotente).
+
+-- Tickets/comprobantes que genera el consumidor de tickets (pedidos360-worker)
+-- al procesar un evento pedido.creado. pedido_id es UNIQUE: si el mismo
+-- evento llega dos veces (reintento), no se duplica el ticket.
+create table if not exists tickets (
+  id uuid primary key default gen_random_uuid(),
+  numero text not null unique,
+  pedido_id uuid not null unique,
+  cliente_nombre text not null,
+  total numeric(12, 2) not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- Mensajes que terminaron en la DLQ (pedidos.dlq), con el motivo que da
+-- RabbitMQ (rejected, expired, maxlen) o "unrouted" si no tenía destino.
+create table if not exists mensajes_dlq (
+  id uuid primary key default gen_random_uuid(),
+  evento_id text,
+  tipo text,
+  cola_origen text,
+  motivo text not null,
+  intentos integer not null default 0,
+  error text,
+  payload jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table tickets enable row level security;
+alter table mensajes_dlq enable row level security;

@@ -28,4 +28,8 @@ export const env = {
   // esa es para el front si algún día hablara directo con Supabase.
   supabaseUrl: required(process.env.SUPABASE_URL, "SUPABASE_URL"),
   supabaseSecretKey: required(process.env.SUPABASE_SECRET_KEY, "SUPABASE_SECRET_KEY"),
+
+  // RabbitMQ (local: docker-compose; producción: CloudAMQP, usar amqps://).
+  // Si falta, la API funciona igual pero no publica eventos.
+  rabbitmqUrl: required(process.env.RABBITMQ_URL, "RABBITMQ_URL"),
 };

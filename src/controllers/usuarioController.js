@@ -1,4 +1,5 @@
 import * as UsuarioModel from "../models/usuarioModel.js";
+import * as EventPublisher from "../messaging/eventPublisher.js";
 
 const ROLES = ["Admin", "Operador", "Cliente"];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -60,6 +61,7 @@ export async function crear(req, res) {
     }
   }
 
+  void EventPublisher.usuarioCreado({ ...usuario, roles: [rol] });
   res.status(201).json({ ...usuario, roles: [rol] });
 }
 
