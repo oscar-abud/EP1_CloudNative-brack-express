@@ -58,8 +58,8 @@ create table if not exists tickets (
   created_at timestamptz not null default now()
 );
 
--- Mensajes que terminaron en la DLQ (pedidos.dlq), con el motivo que da
--- RabbitMQ (rejected, expired, maxlen) o "unrouted" si no tenía destino.
+-- Mensajes que terminaron en alguna DLQ (pedidos.*.dlq), con el motivo que da
+-- RabbitMQ (rejected, expired, maxlen) o "no-recuperable".
 create table if not exists mensajes_dlq (
   id uuid primary key default gen_random_uuid(),
   evento_id text,
@@ -74,3 +74,17 @@ create table if not exists mensajes_dlq (
 
 alter table tickets enable row level security;
 alter table mensajes_dlq enable row level security;
+
+-- Auditoría: cada evento de dominio que procesa la cola pedidos.auditoria.queue
+-- (binding "#"). evento_id es UNIQUE para que un reintento no duplique filas.
+create table if not exists eventos (
+  id uuid primary key default gen_random_uuid(),
+  evento_id text not null unique,
+  tipo text not null,
+  routing_key text,
+  data jsonb,
+  ocurrido_en timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table eventos enable row level security;

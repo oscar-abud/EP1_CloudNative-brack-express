@@ -13,14 +13,18 @@ export async function listarDlq(req, res) {
   res.json(await MensajeriaModel.getMensajesDlq());
 }
 
+export async function listarEventos(req, res) {
+  res.json(await MensajeriaModel.getEventos());
+}
+
 export async function listarTickets(req, res) {
   res.json(await MensajeriaModel.getTickets());
 }
 
 // Demo para la evaluación: publica un pedido.creado de prueba. Sin "fallo"
-// se procesa normal (genera ticket). Con "transitorio" el consumidor
-// reintenta 3 veces con backoff y luego lo manda a la DLQ; con "permanente"
-// va directo a la DLQ (error no recuperable, sin reintentos).
+// se procesa normal (genera ticket). Con "transitorio" el consumidor de
+// tickets reintenta 3 veces con backoff y luego lo manda a pedidos.tickets.dlq;
+// con "permanente" va directo a esa DLQ (no recuperable, sin reintentos).
 export async function simular(req, res) {
   const { fallo } = req.body ?? {};
   if (fallo !== undefined && !TIPOS_FALLO.includes(fallo)) {

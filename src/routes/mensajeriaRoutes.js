@@ -10,6 +10,7 @@ router.use(requireRole("Admin"));
 router.get("/estado", MensajeriaController.estado);
 router.get("/dlq", MensajeriaController.listarDlq);
 router.get("/tickets", MensajeriaController.listarTickets);
+router.get("/eventos", MensajeriaController.listarEventos);
 router.post("/simular", MensajeriaController.simular);
 
 export default router;

@@ -28,6 +28,28 @@ function toTicket(row) {
   };
 }
 
+function toEvento(row) {
+  return {
+    id: row.id,
+    eventoId: row.evento_id,
+    tipo: row.tipo,
+    routingKey: row.routing_key,
+    data: row.data,
+    ocurridoEn: row.ocurrido_en,
+    registradoEn: row.created_at,
+  };
+}
+
+export async function getEventos(limit = 100) {
+  const { data, error } = await supabase
+    .from("eventos")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.map(toEvento);
+}
+
 export async function getMensajesDlq(limit = 100) {
   const { data, error } = await supabase
     .from("mensajes_dlq")
